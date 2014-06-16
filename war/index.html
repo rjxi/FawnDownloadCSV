@@ -1,0 +1,176 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!-- The HTML 4.01 Transitional DOCTYPE declaration-->
+<!-- above set at the top of the file will set     -->
+<!-- the browser's rendering engine into           -->
+<!-- "Quirks Mode". Replacing this declaration     -->
+<!-- with a "Standards Mode" doctype is supported, -->
+<!-- but may lead to some differences in layout.   -->
+
+
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <title>Data Download</title>
+        <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" media="all" href="css/daterangepicker-bs3.css" />      
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+        <script type="text/javascript" src="js/moment.js"></script>     
+        <script type="text/javascript" src="js/daterangepicker.js"></script> 
+        <script type="text/javascript">
+			$(document).ready(function(){
+				var grower = new Array();
+				$.getJSON('http://fdacswx.fawn.ifas.ufl.edu/index.php/read/station/format/json', function(data) {
+					$.each(data, function() {
+						if($.inArray(this.grower_name, grower) == -1){
+							grower.push(this.grower_name);
+						}
+					});
+					grower.sort();
+					$("#grower").append("<option></option>");
+					for(var i = 0; i < grower.length; i++){
+						if(i == 8){
+							$("#grower").append("<option selected=\"selected\" value=\""+grower[i]+"\">"+grower[i]+"</option>");
+						}
+						$("#grower").append("<option value=\""+grower[i]+"\">"+grower[i]+"</option>");
+					}
+					
+					var sValue = $("#grower").val();
+					$.each(data, function() {
+						if(this.grower_name == sValue){
+							$("#station").append("<option value=\""+this.id+"\">"+this.station_name+"</option>");
+						}
+					});
+					
+					$("#grower").change(function(){
+						$("#station").empty();
+						var selectValue = $(this).val();
+						$.each(data, function() {
+							if(this.grower_name == selectValue){
+								$("#station").append("<option value=\""+this.id+"\">"+this.station_name+"</option>");
+							}
+						});
+					});
+				});
+			});
+			
+			$(document).ready(function(){
+				$("#form").submit(function(e) {
+					if(!$("input[type=\"checkbox\"]:checked").length) {
+						alert("Please select at least one measurement to download data!");
+						//stop the form from submitting
+						return false;
+					}
+					return true;
+				});
+			});
+			
+		   var date = moment();
+		   $(document).ready(function() {
+			  $('#reportrange').daterangepicker(
+				 {
+					startDate: moment().subtract('days', 1),
+					endDate: moment(),
+					minDate: '01/01/2010',
+					maxDate: date.format('L'),
+					showDropdowns: true,
+					showWeekNumbers: true,
+					timePicker: false,
+					timePickerIncrement: 1,
+					timePicker12Hour: true,
+					ranges: {
+					   'Today': [moment(), moment()],
+					   'Yesterday': [moment().subtract('days', 1), moment().subtract('days', 1)],
+					   'Last 3 Days': [moment().subtract('days', 3), moment().subtract('days', 1)],
+					   'Last 7 Days': [moment().subtract('days', 7), moment().subtract('days', 1)],
+					   'Last 14 Days': [moment().subtract('days', 14), moment().subtract('days', 1)],
+					   'Last 30 Days': [moment().subtract('days', 30), moment().subtract('days', 1)],
+					   'This Month': [moment().startOf('month'), moment().endOf('month')],
+					   'Last Month': [moment().subtract('month', 1).startOf('month'), moment().subtract('month', 1).endOf('month')]
+					},
+					opens: 'left',
+					buttonClasses: ['btn btn-default'],
+					applyClass: 'btn-small btn-primary',
+					cancelClass: 'btn-small',
+					format: 'MM/DD/YYYY',
+					separator: ' to ',
+					locale: {
+						applyLabel: 'Submit',
+						fromLabel: 'From',
+						toLabel: 'To',
+						customRangeLabel: 'Custom Range',
+						daysOfWeek: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr','Sa'],
+						monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+						firstDay: 1
+					}
+				 },
+				 function(start, end) {
+                      console.log("Callback has been called!");
+                      $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+					  $('#from').val(start.format('YYYY-MM-DD'));
+                      $('#to').val(end.format('YYYY-MM-DD'));
+                     }
+			  );
+			  //Set the initial state of the picker label
+			  //$('#reportrange span').html(moment().subtract('days', 29).format('MMMM D, YYYY') + ' - ' + moment().format('MMMM D, YYYY'));
+			  $('#reportrange span').html(moment().format('MMMM D, YYYY') + ' - ' + moment().format('MMMM D, YYYY'));
+			  $('#from').val(moment().format('YYYY-MM-DD'));
+              $('#to').val(moment().format('YYYY-MM-DD'));
+		   });
+		</script>
+    </head>
+    
+    <body>
+    	<form id="form" action="downloadcsv" method="post">
+        <h4>Station:</h4>
+        <div class="well" style="overflow: auto">
+            <div id="inline">
+                Growers:<select name="growers" id="grower"></select>
+            </div>
+            <div id="inline">
+                Stations:<select name="stations" id="station"></select>
+            </div>
+         </div>
+                
+        <h4>Select Date Range With Options</h4>
+
+            <div class="well" style="overflow: auto">
+
+               <div id="reportrange" class="pull-left" style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc">
+                  
+                  <span></span> <b class="caret"></b>
+                  <input type="hidden" name="from" id="from" value="">
+                  <input type="hidden" name="to" id="to" value="">
+               </div>
+            </div>
+                
+                
+        <h4>Measurements:</h4>
+        	<div class="well" style="overflow: auto">
+                <div id="mea">
+                    <input type="checkbox" name="Measurement" value="dry_bulb_air_temp">dry bulb air temp
+                </div>
+                <div id="mea">
+                    <input type="checkbox" name="Measurement" value="wet_bulb_temp">wet bulb temp
+                </div>
+                <div id="mea">
+                    <input type="checkbox" name="Measurement" value="humidity">humidity
+                </div>
+                <div id="mea">
+                    <input type="checkbox" name="Measurement" value="wind_speed">wind speed
+                </div>
+                <div id="mea">
+                    <input type="checkbox" name="Measurement" value="wind_direction">wind direction
+                </div>
+                <div id="mea">
+                    <input type="checkbox" name="Measurement" value="rainfall">rainfall
+                </div>
+            </div>
+        
+        <h4>Download Data:
+                <input type="submit" value=".CSV(Excel)">
+            
+        </h4>
+    	</form>
+    </body>
+</html>
+
